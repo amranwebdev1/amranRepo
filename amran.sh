@@ -4,73 +4,138 @@
 install_amran() {
     echo "Updating and upgrading Termux packages..."
     pkg update && pkg upgrade -y
-
-    echo "Installing required dependencies..."
     pkg install python ffmpeg -y
-
-    echo "Installing yt-dlp..."
     pip install -U --no-deps yt-dlp
-
-    echo "Setup completed! You can now use 'amran -v <url>' for video or 'amran -a <url>' for audio downloads."
+    echo "Setup completed!"
 }
 
 # ফাংশন: ভিডিও ডাউনলোড
 download_video() {
-    local url=$1
+    local prefix=$1
+    local url=$2
     if [ -z "$url" ]; then
         echo "Error: Please provide a video URL."
         exit 1
     fi
 
-    # ডাউনলোড ফোল্ডার তৈরি
-    mkdir -p /storage/emulated/0/Download/amran
+    # কুকিজ ফাইল নির্বাচন
+    local cookies=""
+    if [[ "$url" == *"tiktok.com"* ]] && [ -f ~/tiktok_cookies.txt ]; then
+        cookies="--cookies ~/tiktok_cookies.txt"
+        echo "Using TikTok cookies..."
+    elif [[ "$url" == *"facebook.com"* ]] && [ -f ~/facebook_cookies.txt ]; then
+        cookies="--cookies ~/facebook_cookies.txt"
+        echo "Using Facebook cookies..."
+    fi
 
-    echo "Downloading video in Full HD (MP4) to /storage/emulated/0/Download/amran..."
-    yt-dlp -f "bestvideo[height<=1080]+bestaudio/best[height<=720]" --merge-output-format mp4 -o "/storage/emulated/0/Download/amran/%(title)s.%(ext)s" "$url"
-    termux-toast "Video download completed!"
+    mkdir -p /storage/emulated/0/Download/amran
+    local filename="%(title)s.%(ext)s"
+    if [ -n "$prefix" ]; then
+        filename="${prefix}_%(title)s.%(ext)s"
+        echo "Using custom prefix: $prefix"
+    fi
+
+    echo "Downloading video in 720p (MP4)..."
+    timeout 600 yt-dlp $cookies -f "bestvideo[height<=720]+bestaudio/best[height<=720]" --merge-output-format mp4 --no-playlist -o "/storage/emulated/0/Download/amran/$filename" --verbose "$url" 2>/tmp/amran_error.log
+    if [ $? -eq 0 ]; then
+        termux-toast "Video download completed!"
+    else
+        termux-toast "Video download failed!"
+        echo "Error: Download failed. Check /tmp/amran_error.log for details."
+        cat /tmp/amran_error.log
+        exit 1
+    fi
 }
 
 # ফাংশন: অডিও ডাউনলোড
 download_audio() {
-    local url=$1
+    local prefix=$1
+    local url=$2
     if [ -z "$url" ]; then
         echo "Error: Please provide a video URL."
         exit 1
     fi
 
-    # ডাউনলোড ফোল্ডার তৈরি
-    mkdir -p /storage/emulated/0/Download/amran
+    # কুকিজ ফাইল নির্বাচন
+    local cookies=""
+    if [[ "$url" == *"tiktok.com"* ]] && [ -f ~/tiktok_cookies.txt ]; then
+        cookies="--cookies ~/tiktok_cookies.txt"
+        echo "Using TikTok cookies..."
+    elif [[ "$url" == *"facebook.com"* ]] && [ -f ~/facebook_cookies.txt ]; then
+        cookies="--cookies ~/facebook_cookies.txt"
+        echo "Using Facebook cookies..."
+    fi
 
-    echo "Downloading audio in MP3 to /storage/emulated/0/Download/amran..."
-    yt-dlp -x --audio-format mp3 --audio-quality 0 -o "/storage/emulated/0/Download/amran/%(title)s.%(ext)s" "$url"
-    termux-toast "Audio download completed!"
+    mkdir -p /storage/emulated/0/Download/amran
+    local filename="%(title)s.%(ext)s"
+    if [ -n "$prefix" ]; then
+        filename="${prefix}_%(title)s.%(ext)s"
+        echo "Using custom prefix: $prefix"
+    fi
+
+    echo "Downloading audio in MP3..."
+    timeout 600 yt-dlp $cookies -x --audio-format mp3 --audio-quality 0 --no-playlist -o "/storage/emulated/0/Download/amran/$filename" --verbose "$url" 2>/tmp/amran_error.log
+    if [ $? -eq 0 ]; then
+        termux-toast "Audio download completed!"
+    else
+        termux-toast "Audio download failed!"
+        echo "Error: Download failed. Check /tmp/amran_error.log for details."
+        cat /tmp/amran_error.log
+        exit 1
+    fi
 }
 
-# স্টোরেজ পারমিশন নিশ্চিত করা
+# স্টোরেজ পারমিশন
 if [ ! -d "/storage/emulated/0" ]; then
     termux-setup-storage
     sleep 2
 fi
 
-# কমান্ড লাইন আর্গুমেন্ট চেক করা
-case "$1" in
-    install)
-        install_amran
-        ;;
-    -v)
-        download_video "$2"
-        ;;
-    -a)
-        download_audio "$2"
-        ;;
-    *)
-        echo "Usage:"
-        echo "  amran install           : Install dependencies and setup"
-        echo "  amran -v <url>         : Download video in Full HD (MP4)"
-        echo "  amran -a <url>         : Download audio in MP3"
-        exit 1
-        ;;
-esac
+# কমান্ড লাইন আর্গুমেন্ট পার্সিং
+while [ $# -gt 0 ]; do
+    case "$1" in
+        install)
+            install_amran
+            exit 0
+            ;;
+        v|-v)
+            if [ "$2" = "p" ] || [ "$2" = "-p" ] && [ -n "$3" ]; then
+                download_video "$3" "$4"
+            else
+                download_video "" "$2"
+            fi
+            exit 0
+            ;;
+        a|-a)
+            if [ "$2" = "p" ] || [ "$2" = "-p" ] && [ -n "$3" ]; then
+                download_audio "$3" "$4"
+            else
+                download_audio "" "$2"
+            fi
+            exit 0
+            ;;
+        *)
+            echo "Usage:"
+            echo "  amran install          : Install dependencies and setup"
+            echo "  amran v <url>         : Download video in 720p (MP4)"
+            echo "  amran a <url>         : Download audio in MP3"
+            echo "  amran v p <prefix> <url> : Download video with custom prefix"
+            echo "  amran a p <prefix> <url> : Download audio with custom prefix"
+            exit 1
+            ;;
+    esac
+done
+
+echo "Usage:"
+echo "  amran install          : Install dependencies and setup"
+echo "  amran v <url>         : Download video in 720p (MP4)"
+echo "  amran a <url>         : Download audio in MP3"
+echo "  amran v p <prefix> <url> : Download video with custom prefix"
+echo "  amran a p <prefix> <url> : Download audio with custom prefix"
+exit 1
+
+
+
 
 
 
