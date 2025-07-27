@@ -1,9 +1,13 @@
-# hi my name is Amran
-# Hi Amran Hossen 
+# Hi my name is Amran
 __I am a student__   
 my nam is Amran   
 ___
-`<h1>hi Bangladesh</h1>`  
+`<h1> hi Bangladesh </h1>`  
+```bash
+pkp install mpv
+pkg install python
+chmod +x ~/amran
+```
 ```html
 <head>
   <link rel="stylesheet" href="style.css" type="text/css" media="all" />
@@ -45,8 +49,8 @@ menu.addEventListener('click',()=>{
 - [x] sundor
 - [] bongau
 .   
-| Name | Email |
-| ___ | ___ |
+| Name | Email |   
+| ___ | ___ |   
 | Amran | amran@gmail.com |
 | Amran | amran@gmail.com |
 | Amran | amran@gmail.com |.   
