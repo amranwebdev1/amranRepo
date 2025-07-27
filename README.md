@@ -50,7 +50,7 @@ menu.addEventListener('click',()=>{
 - [] bongau
 .   
 | Name | Email |   
-| ___ | ___ |   
+| ------| --------|   
 | Amran | amran@gmail.com |
 | Amran | amran@gmail.com |
 | Amran | amran@gmail.com |.   
