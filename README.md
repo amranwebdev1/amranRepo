@@ -49,10 +49,10 @@ menu.addEventListener('click',()=>{
 - [x] sundor
 - [] bongau
 .   
-| Name | Email           |
+| Name  | Email           |
 |-------|-----------------|
 | Amran | amran@gmail.com |
 | Amran | amran@gmail.com |
-| Amran | amran@gmail.com |    
+| Amran | amran@gmail.com | 
 ![img](pahar.jpeg).   
 [website](https://www.google.com)
